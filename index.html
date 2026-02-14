@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Meter - Soil Moisture Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --background-color: #1a1a1a;
+            --text-color: #ecf0f1;
+            --gravity-container-height: 400px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            margin-bottom: 2rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .gravity-container {
+            width: 100px;
+            height: var(--gravity-container-height);
+            border: 2px solid var(--primary-color);
+            border-radius: 50px;
+            position: relative;
+            background: linear-gradient(to bottom, #2c3e50, #1a1a1a);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(52, 152, 219, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        /* The floating/falling icon - using a simple drop shape */
+        .icon {
+            width: 60px;
+            height: 60px;
+            background-color: var(--primary-color);
+            border-radius: 50% 50% 50% 0;
+            /* Teardrop shape */
+            transform: rotate(-45deg);
+            position: absolute;
+            left: 50%;
+            margin-left: -30px;
+            /* Center horizontally */
+            transition: bottom 1s cubic-bezier(0.25, 0.1, 0.25, 1);
+            /* Gravity-like fall */
+            box-shadow: 0 0 15px var(--primary-color);
+            /* Initial position (Dry/Heavy) */
+            bottom: 10px;
+        }
+
+        .water-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .water-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .water-btn:active {
+            transform: translateY(1px);
+        }
+
+        .status-text {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #bdc3c7;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Gravity Meter</h1>
+
+    <div class="gravity-container">
+        <div class="icon" id="gravityIcon"></div>
+    </div>
+
+    <button class="water-btn" onclick="triggerWatering()">Water Plant</button>
+
+    <div class="status-text" id="statusText">Loading moisture data...</div>
+
+    <script>
+        const API_URL = "http://your-esp32-ip-address"; // UPDATE THIS
+        const icon = document.getElementById('gravityIcon');
+        const statusText = document.getElementById('statusText');
+
+        // Function to update the "gravity" (icon position)
+        // moisture: 0 (dry, heavy gravity) to 100 (wet, zero gravity/floating)
+        function updateGravity(moisture) {
+            // Map moisture (0-100) to bottom position (10px to ~330px)
+            const minBottom = 10;
+            const maxBottom = 330;
+            const newBottom = minBottom + (moisture / 100) * (maxBottom - minBottom);
+
+            icon.style.bottom = `${newBottom}px`;
+
+            let status = "";
+            if (moisture < 30) status = "Soil is DRY (Heavy Gravity)";
+            else if (moisture < 70) status = "Soil is OK";
+            else status = "Soil is WET (Floating)";
+
+            statusText.innerText = `${status} (${moisture}%)`;
+        }
+
+        // Simulate fetching data (Replace with actual fetch in production)
+        function fetchData() {
+            // In a real scenario, fetch from ESP32:
+            /*
+            fetch(`${API_URL}/status`)
+                .then(response => response.json())
+                .then(data => updateGravity(data.moisture))
+                .catch(err => {
+                    console.error("Error fetching data:", err);
+                    statusText.innerText = "Connection Error";
+                });
+            */
+
+            // For DEMO: oscillate randomly to simulate drying over time
+            // (This is just a placeholder logic for the demo)
+        }
+
+        // Simulate 'Watering' action
+        function triggerWatering() {
+            console.log("Watering triggered...");
+            statusText.innerText = "Watering...";
+
+            // Instantly restore gravity (float up) to simulate watering
+            // In real app, this sends command to ESP32
+            /*
+            fetch(`${API_URL}/water`)
+                .then(res => console.log("Pump activated"))
+                .catch(err => console.error(err));
+            */
+
+            // DEMO: set to 100% immediately
+            updateGravity(100);
+
+            // Then let it slowly dry out (simulate gravity taking over again)
+            // This is just for the visual 'fall' effect demonstration
+            setTimeout(() => {
+                simulateDrying();
+            }, 2000);
+        }
+
+        // Simulation helper
+        let currentMoisture = 100;
+        function simulateDrying() {
+            const interval = setInterval(() => {
+                currentMoisture -= 5;
+                if (currentMoisture <= 0) {
+                    currentMoisture = 0;
+                    clearInterval(interval);
+                }
+                updateGravity(currentMoisture);
+            }, 500); // Drop 5% every 0.5s
+        }
+
+        // Initial Start
+        updateGravity(10); // Start dry
+    </script>
+</body>
+
+</html>
